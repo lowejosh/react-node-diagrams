@@ -3,19 +3,17 @@ import styled from 'styled-components';
 import { useContainerWidth } from '../../hooks/useContainerWidth';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
 
-const Wrapper = styled.div.attrs<{coords: { x: number | string; y: number | string } }>(({coords}) => ({
+const Wrapper = styled.div.attrs<{ coords: { x: number | string; y: number | string } }>(({ coords }) => ({
   style: {
     left: coords.x,
     top: coords.y,
-  } 
-}))<{ selected: boolean, coords: any }>(
-  ({ selected }) => ({
-    userSelect: "none",
-    position: 'absolute',
-    cursor: selected ? 'move' : 'pointer',
-    ...(selected && { outline: '2px solid blue' }),
-  }),
-);
+  },
+}))<{ selected: boolean; coords: any }>(({ selected }) => ({
+  userSelect: 'none',
+  position: 'absolute',
+  cursor: selected ? 'move' : 'pointer',
+  ...(selected && { outline: '2px solid blue' }),
+}));
 
 export interface NodeProps {
   initialX?: number | string;
@@ -32,23 +30,28 @@ export const Node: React.FC<NodeProps> = ({ children, initialX, initialY }) => {
 
   console.log('rerendered');
   useEffect(() => {
-    const ball = document.getElementById('ball');
-    if (ball && selected) {
-      ball.onmousedown = function (event) {
-        let shiftX = event.clientX - ball.getBoundingClientRect().left;
-        let shiftY = event.clientY - ball.getBoundingClientRect().top;
+    const node = wrapperRef.current;
 
-        ball.style.position = 'absolute';
+    if (!selected && node) {
+      node.onmousedown = null
+    }
+
+    if (node && selected) {
+      node.onmousedown = function (event: MouseEvent) {
+        let shiftX = event.clientX - node.getBoundingClientRect().left;
+        let shiftY = event.clientY - node.getBoundingClientRect().top;
+
+        node.style.position = 'absolute';
 
         moveAt(event.pageX, event.pageY);
 
-        // moves the ball at (pageX, pageY) coordinates
+        // moves the node at (pageX, pageY) coordinates
         // taking initial shifts into account
         function moveAt(pageX: number, pageY: number) {
-          if (ball) {
+          if (node) {
             setCoords({ x: pageX - shiftX, y: pageY - shiftY });
-            // ball.style.left = pageX - shiftX + 'px';
-            // ball.style.top = pageY - shiftY + 'px';
+            // node.style.left = pageX - shiftX + 'px';
+            // node.style.top = pageY - shiftY + 'px';
           }
         }
 
@@ -56,24 +59,30 @@ export const Node: React.FC<NodeProps> = ({ children, initialX, initialY }) => {
           moveAt(event.pageX, event.pageY);
         }
 
-        // move the ball on mousemove
+        // move the node on mousemove
         document.addEventListener('mousemove', onMouseMove);
 
-        // drop the ball, remove unneeded handlers
-        ball.onmouseup = function () {
+        // drop the node, remove unneeded handlers
+        node.onmouseup = function () {
           document.removeEventListener('mousemove', onMouseMove);
-          ball.onmouseup = null;
+          node.onmouseup = null;
         };
       };
 
-      ball.ondragstart = function () {
+      node.ondragstart = function () {
         return false;
       };
-    }
+    } 
+
+    return () => {
+      if (node) {
+        node.onmouseup = null;
+      }
+    };
   }, [selected]);
 
   return (
-    <Wrapper id="ball" ref={wrapperRef} coords={coords} selected={selected} onClick={() => setSelected(true)}>
+    <Wrapper id="node" ref={wrapperRef} coords={coords} selected={selected} onClick={() => setSelected(true)}>
       {children}
     </Wrapper>
   );
